@@ -1,0 +1,151 @@
+<div class="section section-hidden" name="Canvas Manager" data-type="package" data-id="dZcAKAuE" draggable="false" style=""><div class="paragraph body-paragraph" name="Documentation" data-id="3VVTppGf"><div data-type="content" type="text/html" codemirror="true" contenteditable="true" class="section-documentation"><h2>Canvas Manager</h2>
+<div>Visualisation of the current canvases with an option to also add new ones. Requires the canvas and the pipeline interface packages.</div></div></div><div class="paragraph data-paragraph locked collapsed" name="Properties" data-id="MQ7BcmjF"><pre data-type="content" type="application/json" class="section-properties" contenteditable="false">{
+  "version": "0.1",
+  "icon": "your_material_icon_string",
+  "description": "Manager of the current canvases.",
+  "tags": [
+    "Vistrate"
+  ],
+  "dependencies": [
+    {
+      "id": "kTKppb2i",
+      "name": "Vistrate",
+      "optional": false
+    },
+    {
+      "id": "Kw6McUkB",
+      "name": "Canvas",
+      "optional": false
+    }
+  ],
+  "changelog": {
+    "0.1": "Initial version."
+  }
+}</pre></div><div class="paragraph code-paragraph collapsed" name="Canvas Manager" data-id="bvzsqJtV" last-execution-state="success" run-on-load="true"><pre data-type="content" type="text/javascript-viscontroller" class="viscontroller" id="canvasManager">vc = {
+	data: 'canvasManager-data',
+	src: [],
+	props: [],
+	init: function() {
+    const SectionUtils = require("#section-utils");
+    const ParagraphUtils = require("#paragraph-utils");
+    
+    this.getCanvasIds = () =&gt; {
+      const ids = [];
+      [].forEach.call(document.querySelectorAll(".canvas"), (el) =&gt; {
+        ids.push(el.id);
+    	});
+      return ids;
+    };
+
+    function createNarrativeSection(){
+      const section = SectionUtils.createSection("Canvases");
+      section.classList.add("canvas-section");
+      const sections = document.querySelector('#sections');
+      sections.appendChild(section);
+      return section;
+    }
+    
+    this.addNewCanvas = () =&gt; {
+      let section = document.querySelector(".canvas-section");
+      if(!section) section = createNarrativeSection();
+      const id = Codestrate.util.randomString();
+      const paragraph = ParagraphUtils.createBodyParagraph();
+      const content = paragraph.querySelector("[data-type='content']");
+      content.setAttribute("contenteditable", "false");
+      content.classList.add("canvas");
+      content.id = id;
+      section.appendChild(paragraph);
+      return id;
+    };
+    
+    this.draw = () =&gt; {
+      this.view.content = '&lt;div class="canvas-overview-container"&gt;&lt;/div&gt;';
+      let data = ["Pipeline"];
+      data = data.concat(this.getCanvasIds());
+      data.push("Add new canvas");
+      
+      const container = document.querySelector(".canvas-overview-container");
+      data.forEach((t) =&gt; {
+        const div = document.createElement("div");
+        div.classList.add("option");
+        container.appendChild(div);
+        const p = document.createElement("p");
+        if(t === "Pipeline"){          
+          p.innerHTML = t;
+          div.addEventListener("click", (e) =&gt; {
+            let interface = Vistrate.getOutput("pipelineInterface");
+            interface.update("showPipeline"); 
+          });  
+        }
+        else if(t === "Add new canvas"){
+          p.innerHTML = t;
+          div.addEventListener("click", (e) =&gt; {
+            const id = this.addNewCanvas();
+            let interface = Vistrate.getOutput("pipelineInterface");
+            interface.update({"showCanvas": id});
+          });
+          div.classList.add("addCanvas");
+        }
+        else{
+          p.innerHTML = "Canvas #"+t;
+          div.addEventListener("click", (e) =&gt; {
+            let interface = Vistrate.getOutput("pipelineInterface");
+        		interface.update({"showCanvas": t}); 
+          });
+        }
+        div.appendChild(p);
+      });
+    };
+
+	},
+	destroy: function() {
+
+	},
+	update: function(source) {
+		this.draw();
+	},
+};</pre></div><div class="paragraph data-paragraph collapsed" name="Canvas Manager data" data-id="E2ABGc8c"><pre data-type="content" type="application/json" id="canvasManager-data" class="visdata">{
+  "config": {
+    "src": {},
+    "view": "canvasManager-view"
+  },
+  "data": {}
+}</pre></div><div class="paragraph body-paragraph" name="Canvas Manager view" data-id="ZS8K5M75"><div data-type="content" type="text/html" codemirror="true" contenteditable="true" id="canvasManager-view" class="visview"></div></div><div class="paragraph style-paragraph collapsed" data-id="8vFHTmYr"><style data-type="content" type="text/css" codemirror="true">/* CSS here */
+
+.canvas-overview-container{
+  width: 100%;
+  min-width: 100px;
+  height: 100%;
+  min-height: 100px;
+  background-color: white;
+  overflow: auto;
+}
+
+.canvas-overview-container .option{
+  width: 160px;
+  height: 160px;
+  border: 1px solid black;
+ 	display: inline-block;
+  margin: 10px 10px 10px 10px;
+  cursor: pointer;
+}
+
+.canvas-overview-container .option:hover{
+  border: 1px solid var(--material-color-orange);
+}
+
+.canvas-overview-container .option.addCanvas{
+  border: 1px dashed lightgrey;
+}
+
+.canvas-overview-container .option.addCanvas:hover{
+  border: 1px dashed var(--material-color-orange);
+}
+
+.canvas-overview-container p{
+  font: 16px/1.5 Iowan Old Style,Apple Garamond,Baskerville,Palatino Linotype,Times New Roman,Droid Serif,Times,Source Serif Pro,serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol;
+  color: black;
+  text-align: center;
+  line-height: 120px;
+}
+</style></div></div>

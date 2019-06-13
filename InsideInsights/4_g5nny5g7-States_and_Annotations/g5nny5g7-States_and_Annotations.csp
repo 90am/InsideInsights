@@ -1,0 +1,317 @@
+<div class="section section-visible collapsed" data-id="g5nny5g7" name="States and Annotations" draggable="false" style="" data-type="package"><div class="paragraph body-paragraph collapsed" name="Documentation" data-id="Q8pPurbQ"><div data-type="content" type="text/html" codemirror="true" contenteditable="true" class="section-documentation"><h2>States and Annotations<br></h2><div>Methods for saving and retrieving annotations related to component states.&nbsp;</div><div>Require "#stateManagement" which exposes the methods <i>save_annotation(id, text), restore(id, state_id), get_annotations(id),&nbsp;</i><i style="color: var(--color-secondary-text); font-family: var(--font-secondary); font-size: 1rem; background-color: var(--color-primary-shade-2);">get_annotation(id)</i><i style="color: var(--color-secondary-text); font-family: var(--font-secondary); font-size: 1rem; background-color: var(--color-primary-shade-2);">, get_stateid(id, text) and reset()</i><span style="color: var(--color-secondary-text); font-family: var(--font-secondary); font-size: 1rem; background-color: var(--color-primary-shade-2);">.</span></div></div></div><div class="paragraph data-paragraph locked collapsed" name="Properties" data-id="hPvjxbM9"><pre data-type="content" type="application/json" class="section-properties" contenteditable="false">{
+  "version": "0.6",
+  "icon": "your_material_icon_string",
+  "description": "States and annotations.",
+  "dependencies": [
+    {
+      "id": "kTKppb2i",
+      "name": "Vistrate",
+      "optional": false
+    }
+  ],
+  "changelog": {
+    "0.1": "Initial version.",
+    "0.2": "Added function to get a single annotation",
+    "0.3": "Also checking parent states when getting annotation",
+    "0.4": "Bug fixes",
+    "0.5": "More Bugs",
+    "0.6": "Removed stored data"
+  }
+}</pre></div><div class="paragraph code-paragraph collapsed" data-id="jhvtvnsB" style="" name="State Management"><pre data-type="content" type="text/javascript" id="stateManagement">// JavaScript code here
+
+function get_state(comp){
+  return {config: comp.config, data: comp.data};
+}
+
+function compare_states(s1, s2){
+  if(s1.data &amp;&amp; s1.data.folded !== undefined){
+    delete s1.data.folded;
+  }
+  if(s2.data &amp;&amp; s2.data.folded !== undefined){
+    delete s2.data.folded;
+  }
+  return JSON.stringify(s1) === JSON.stringify(s2);
+}
+
+exports.save_annotation = function(id, text){  
+  let parent_ids = [];
+  const comp = Vistrate.getOutput(id);
+  Object.keys(comp.src).forEach((s) =&gt; {  
+    parent_ids = parent_ids.concat(exports.save_annotation(comp.src[s].id, ""));
+  });
+	const seen = {};
+  parent_ids.forEach((p) =&gt; {
+    seen[p.id] = p;
+  });
+  parent_ids = Object.values(seen);
+  
+  let state_id = Date.now();
+  const state = {state_id: state_id, state: get_state(comp), text: text, parents: parent_ids};
+  const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  if(Object.keys(storage).includes(id)){
+    let index;
+    storage[id].states.forEach((s, i) =&gt; {
+      if(compare_states(s.state, state.state)){
+        let ps = true;
+        s.parents.forEach((p) =&gt; {
+          if(Object.keys(seen).includes(p.id)){
+            if(seen[p.id].state_id !== p.state_id){
+              ps = false;
+            }
+          }
+        });
+        if(ps) index = i;
+      }
+    });
+    
+    if(index !== undefined){
+      state_id = storage[id].states[index].state_id;
+      state.state_id = state_id;
+      if(text !== ""){
+        storage[id].states.splice(index, 1);
+        storage[id].states.push(state);
+      }
+    }
+    else if (index === undefined){
+      storage[id].states.push(state);
+    }
+  }
+  else{
+    storage[id] = {states: [state]};
+  }
+  
+  document.getElementById("stateStorage").firstChild.textContent = JSON.stringify(storage, null, 2);
+  return [{id: id, state_id: state_id}].concat(parent_ids);
+};
+
+exports.restore_children = function(id, state_id){
+	Object.keys(Vistrate.outputs).forEach((c) =&gt; {
+    const comp = Vistrate.getOutput(c);
+    let child = false;
+   	Object.keys(comp.src).forEach((s) =&gt; {  
+      if(comp.src[s] &amp;&amp; comp.src[s].id === id) child = true;
+    });
+    if(child){
+      const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+      if(Object.keys(storage).includes(comp.id)){
+        let state;
+        let fine = false;
+        storage[comp.id].states.forEach((s) =&gt; {
+          s.parents.forEach((p) =&gt; {
+            if(p.id === id &amp;&amp; p.state_id === state_id){
+              if(!fine){
+                state = s;
+                if(compare_states(s, get_state(comp))){
+                  fine = true;
+                }
+              }
+            }
+          });
+        });
+        if(!fine &amp;&amp; state !== undefined){
+          exports.restore(comp.id, state.state_id);
+        }
+      }
+    }
+  });
+};
+
+function find_state(id, state_id){
+	let storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  let state;
+  if(storage[id] !== undefined){
+    storage[id].states.forEach((s) =&gt; {
+      if(s.state_id === state_id){
+        state = s;
+      }
+    });
+  }
+  return state;
+}
+
+function restore_simple(id, state_id){
+	let s = find_state(id, state_id);
+  if(s !== undefined){
+  	const comp = Vistrate.getOutput(id);
+    if(!compare_states(get_state(comp), s.state)){
+      //comp.config = s.state.config;
+      let temp = s.state.data;
+      if(Object.keys(comp.data).includes("folded")){
+      	temp.folded = comp.data.folded;
+      }
+      comp.data = temp;
+    }
+  }
+}
+
+exports.restore = function(id, state_id){
+  let s = find_state(id, state_id);
+  if(s !== undefined){
+    
+    const comp = Vistrate.getOutput(id);
+    Vistrate.pause = true;
+    
+     s.parents.forEach((p) =&gt; {
+      	restore_simple(p.id, p.state_id);
+    	});
+      
+    
+    if(!compare_states(get_state(comp), s.state)){  
+      // comp.config = s.state.config;
+      let temp = s.state.data;
+      if(Object.keys(comp.data).includes("folded")){
+      	temp.folded = comp.data.folded;
+      }
+      comp.data = temp;
+      
+  	} 
+    
+    setTimeout(function(){ Vistrate.pause = false; }, 1000);
+
+    // exports.restore_children(id, state_id);
+   }    
+  return "done";
+};
+
+
+
+function get_insiders(inside, all){
+  let to_move = [];
+  inside.forEach((i) =&gt; {
+    const comp = Vistrate.getOutput(i);
+    if(Object.keys(comp.data).includes("components")){
+      all.forEach((a) =&gt; {
+				if(comp.data.components.includes(a)){
+          to_move.push(a);
+        }
+      });
+    }
+  });
+  if(to_move.length &gt; 0){
+    return get_insiders(inside.concat(to_move), all);
+  }
+  else{
+    return inside;
+  }
+}
+
+exports.get_annotations = function(id){
+	const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+	const result = {current: [], active: [], inactive: []};
+  const comp = Vistrate.getOutput(id);
+  if(comp === undefined) return result;
+  if(storage[id] !== undefined){
+    storage[id].states.forEach((s) =&gt; {
+      if(s.text === "") return;
+      let active = true;
+      let current = true;
+      let inside = []; 
+      if(Object.keys(comp.data).includes("components")){
+        inside = inside.concat(comp.data.components);
+        inside = get_insiders(inside, Object.keys(s.parents));
+       }
+      
+      if(!compare_states(get_state(comp), s.state)) current = false;
+
+      s.parents.forEach((p) =&gt; {
+        const parent = Vistrate.getOutput(p.id);
+        let state = find_state(p.id, p.state_id);
+        if(!inside.includes(p.id)){
+          if(!compare_states(get_state(parent), state.state)){
+            active = false; 
+          }
+        }
+        if(!compare_states(get_state(parent), state.state)){
+          current = false;
+        }
+      });
+      if(current){
+        result.current.push({state_id: s.state_id, text: s.text});
+      }
+      else if(active){
+        result.active.push({state_id: s.state_id, text: s.text});
+      }
+      else{
+        result.inactive.push({state_id: s.state_id, text: s.text});
+      }
+
+    });
+  }
+  
+  return result;
+};
+
+function check_parent(id, state_id){
+ 	const comp = Vistrate.getOutput(id);
+	const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  let result = false;
+	storage[id].states.forEach((s) =&gt; {
+    if(s.state_id === state_id){
+      if(compare_states(get_state(comp), s.state)){
+        result = true;
+      }
+    }
+  });
+  return result;
+}
+
+exports.get_annotation = function(id){
+  const comp = Vistrate.getOutput(id);
+  const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  let text = "";
+  if(comp === undefined) return text;
+  if(Object.keys(storage).includes(id)){
+    storage[id].states.forEach((s) =&gt; {
+      if(compare_states(get_state(comp), s.state)){
+        let ps = true;
+        s.parents.forEach((p) =&gt; {
+          const t = check_parent(p.id, p.state_id);
+          if(!t){
+            ps = t;
+          }
+        });
+        if(ps) text = s.text; 
+      }
+    });
+  }
+  return text;
+};
+
+exports.get_stateid = function(id, text){
+	const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  let state_id;
+	storage[id].states.forEach((s) =&gt; {  
+    if(s.text === text){
+      state_id = s.state_id;
+    }
+  });
+  return state_id;
+};
+
+exports.reset = function(){
+	document.getElementById("stateStorage").firstChild.textContent = JSON.stringify({});
+};
+
+exports.get_ids = function(){
+  const result = [];
+  const storage = JSON.parse(document.getElementById("stateStorage").firstChild.textContent);
+  Object.keys(storage).forEach((id) =&gt; {
+    const states = storage[id].states;
+    let include = false;
+    states.forEach((s) =&gt; {     
+      if(s.text !== "") include = true;
+    });
+    if(include) result.push(id);
+  });
+  return result;
+};
+
+
+/*exports.get_state_subtree = function(id, state, text){
+  
+};
+
+exports.get_all_states = function(id){
+  
+};*/
+</pre></div><div class="paragraph data-paragraph collapsed" data-id="2aiVhUh2" name="State Storage"><pre data-type="content" type="application/json" id="stateStorage">{}</pre></div></div>

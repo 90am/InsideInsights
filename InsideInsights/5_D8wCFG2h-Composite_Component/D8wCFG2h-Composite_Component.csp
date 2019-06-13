@@ -1,0 +1,80 @@
+<div class="section section-hidden" name="Composite Component" data-type="package" data-id="D8wCFG2h"><div class="paragraph body-paragraph" name="Documentation" data-id="JVMGUqRk"><div data-type="content" type="text/html" codemirror="true" contenteditable="true" class="section-documentation"><h2>Composite Component</h2>
+<div>A component that can group together several components.</div></div></div><div class="paragraph data-paragraph collapsed locked" name="Properties" data-id="ecPDjiV8"><pre data-type="content" type="application/json" class="section-properties" contenteditable="false">{
+  "version": "0.1",
+  "icon": "your_material_icon_string",
+  "description": "A component that groups together several components.",
+  "tags": [
+    "vistrate"
+  ],
+	"dependencies": [
+		{
+			"id": "kTKppb2i",
+			"name": "Vistrate",
+			"optional": false
+		}
+	],
+  "changelog": {
+    "0.1": "Initial version."
+  }
+}</pre></div><div class="paragraph code-paragraph collapsed" name="Composite Component" data-id="LGqnT5VU" last-execution-state="success"><pre data-type="content" type="text/javascript-viscontroller" class="viscontroller run-on-add" id="compositeComponent">vc = {
+	data: '$data-id',
+	src: ['input', 'output'],
+	props: [],
+	init: function() {
+    
+    if(this.src.output){
+      Object.keys(Vistrate.outputs).forEach((c) =&gt; {
+        if(!this.data.components.includes(c) &amp;&amp; this.id !== c){
+          let comp = Vistrate.getOutput(c);
+          if(comp.config){
+            if(Object.keys(comp.config).includes("src")){
+              Object.keys(comp.config.src).forEach((key) =&gt; {
+                if(comp.config.src[key] === this.src.output.id){
+                  comp.addSource(key, this.id);
+                }   
+              });
+            }
+          }
+        }
+      });
+    }
+    
+    this.update_input = () =&gt; {
+      if(this.src.input){
+        this.data.components.forEach((c) =&gt; {
+          let comp = Vistrate.getOutput(c); 
+          if(comp.config){
+            Object.keys(comp.config.src).forEach((key) =&gt; {
+              if(comp.config.src[key] === this.id){
+                comp.addSource(key, this.src.input.id);
+              }
+            });
+          }
+        });
+      }
+    };
+	},
+	destroy: function() {
+
+	},
+	update: function(source) {
+    if(source === "ownData" || source === undefined){
+      if(Object.keys(this.data).includes("view")){
+        this.view = Vistrate.getOutput(this.data.view).view;
+      }
+    }
+    if(this.src.output &amp;&amp; this.src.output.output &amp;&amp; (source === this.src.output.id || source === undefined)) this.output = this.src.output.output;
+    
+    this.update_input();
+	},
+};</pre></div><div class="paragraph data-paragraph collapsed" name="Composite Component data" data-id="yXYUBxaX"><pre data-type="content" type="application/json" id="compositeComponent-data" class="visdata">{
+  "config": {
+    "src": {},
+    "view": "$view-id"
+  },
+  "data": {
+    "components": [],
+    "view": "",
+    "folded": false
+  }
+}</pre></div><div class="paragraph body-paragraph" name="Composite Component view" data-id="ieCVjC2B"><div data-type="content" type="text/html" codemirror="true" contenteditable="true" id="compositeComponent-view" class="visview"></div></div></div>

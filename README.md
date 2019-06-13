@@ -10,11 +10,11 @@ For an overview, read [our Medium blog post](https://medium.com/hcil-at-umd/on-t
 
 ## Installation
 
-InsideInsights is build upon [Vistrates](http://vistrates.org) (a visualization component model), [Codestrates](http://codestrates.org) (a JavaScript-based computational notebook), and [Webstrates](https://webstrates.net). In essence, users alternate between the notebook interface and the InsideInsights interface as needed. 
+InsideInsights is build upon [Vistrates](http://vistrates.org) (a visualization component model), [Codestrates](http://codestrates.org) (a JavaScript-based computational notebook), and [Webstrates](https://webstrates.net). In essence, users can alternate between the notebook interface and the InsideInsights interface as needed. 
 
-In order to use InsideInsights, you need to setup a server with Webstrates and Codestrates first. See the also [Codestrates GitHub repo](https://github.com/Webstrates/Codestrates) as well as the [Webstrates documentation](https://webstrates.github.io/#doc-2019-05-16-gigwrdtxkn) for more details.
+In order to use InsideInsights, you need to setup a server with Webstrates and install Codestrates. See the [Codestrates GitHub repo](https://github.com/Webstrates/Codestrates) as well as the [Webstrates documentation](https://webstrates.github.io/#doc-2019-05-16-gigwrdtxkn) for more details.
 
-InsideInsights itself is implemented as Vistrates meta-package. As we have slightly adapted Vistrates itself (e.g. to support composite components), please use the version provided in the repo here.
-The Codestrates package management offers a *Import Packages* option, where you can upload the zip-file or directly link to this repo.
+InsideInsights itself is implemented as Vistrates meta-package. As we have slightly adapted Vistrates itself (e.g. to support composite components), please use the version provided in this repo.
+The Codestrates package management offers an *Import Packages* option, where you can upload the zip-file or directly link to this repo.
 
-Please note that you still need to manually install and configure visualizations [from the Vistrates framework](https://github.com/karthikbadam/Vistrates).
+Please note that you still need to manually install and configure any data, computation, and visualization components [from the Vistrates framework](https://github.com/karthikbadam/Vistrates). Or, develop your own analysis components.
